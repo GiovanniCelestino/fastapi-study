@@ -1,15 +1,37 @@
 from fastapi import FastAPI
 from fastapi import HTTPException
 from fastapi import status
-from models import Curso
-from fastapi.responses import JSONResponse
 from fastapi import Response
 from fastapi import Path
 from fastapi import Query
 from fastapi import Header
-from typing import Optional
+from fastapi import Depends
+from fastapi.responses import JSONResponse
+from typing import Optional, Any, List, Dict
+from models import Curso
+from time import sleep
+
+
+
+#Simulando uma conexão com o banco de dados:
+def fake_db():
+    try:
+        print('Abrindo conexão com banco de dados...')
+        sleep(1)
+    finally:
+        print('Fechando conexão com banco de dados...')
+        sleep(1)
+
+
+
+
 #instancia o objeto
-app = FastAPI()
+#Informações por dentro do parâmetro, aparecerá no docs.
+app = FastAPI(
+    title= 'API de Cursos Giovanni',
+    version='0.0.1',
+    description='Uma API para estudo do FastAPI',
+)
 
 
 cursos = {
@@ -26,15 +48,21 @@ cursos = {
 }
 
 #Pega todos os cursos
-@app.get('/cursos')
-async def get_cursos():
+@app.get('/cursos',
+          description='Retorna todos os cursos ou uma lista vazia.',
+          summary='Retorna todos os cursos',
+          response_model=List[Curso])
+async def get_cursos(db: Any = Depends(fake_db)):
     return cursos
 
 
 #Pega por individuo
 #Passo por parâmetro o ID do curso
-@app.get('/cursos/{curso_id}')
-async def get_curso(curso_id: int = Path(default=None, title='ID do curso', description='Deve ser entre 1 e 2', gt=0, lt=3)):
+@app.get('/cursos/{curso_id}', 
+         description='Retorna somente um curso.', 
+         summary='Retorna um curso',
+         response_model=Curso)
+async def get_curso(curso_id: int = Path(default=None, title='ID do curso', description='Deve ser entre 1 e 2', gt=0, lt=3), db: Any = Depends(fake_db)):
     try:
         curso = cursos[curso_id]
         #curso.update({"id": curso_id})
@@ -47,8 +75,12 @@ async def get_curso(curso_id: int = Path(default=None, title='ID do curso', desc
 
 #Inserir uma nova informação
 #Vamos começar a usar as informações do arquivo models(já importado)
-@app.post('/cursos', status_code=status.HTTP_201_CREATED)
-async def post_curso(curso: Curso):
+@app.post('/cursos', 
+          status_code=status.HTTP_201_CREATED, 
+          description='Inserir um novo curso.', 
+          summary='Insere curso',
+          response_model=Curso)
+async def post_curso(curso: Curso, db: Any = Depends(fake_db)):
     teste: int = len(cursos) + 1
     cursos[teste] = curso
     #del curso.id
@@ -56,8 +88,10 @@ async def post_curso(curso: Curso):
 
 
 #Atualiza informações já existente
-@app.put('/cursos/{curso_id}')
-async def put_cursos(curso_id: int, curso: Curso):
+@app.put('/cursos/{curso_id}', 
+         description='Atualiza informações de um curso já existente', 
+         summary='Atualiza curso')
+async def put_cursos(curso_id: int, curso: Curso, db: Any = Depends(fake_db)):
     if curso_id in cursos:
         cursos[curso_id] = curso
         del curso.id
@@ -68,8 +102,10 @@ async def put_cursos(curso_id: int, curso: Curso):
 
 
 #Deleta alguma informação
-@app.delete('/cursos/{curso_id}')
-async def put_cursos(curso_id: int):
+@app.delete('/cursos/{curso_id}', 
+            description= 'Deleta um curso existente', 
+            summary='Deleta curso')
+async def put_cursos(curso_id: int, db: Any = Depends(fake_db)):
     if curso_id in cursos:
         del cursos[curso_id]
         # return JSONResponse(status_code=status.HTTP_204_NO_CONTENT)
