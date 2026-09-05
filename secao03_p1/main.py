@@ -8,7 +8,7 @@ from fastapi import Header
 from fastapi import Depends
 from fastapi.responses import JSONResponse
 from typing import Optional, Any, List, Dict
-from models import Curso
+from models import Curso, cursos
 from time import sleep
 
 
@@ -34,24 +34,12 @@ app = FastAPI(
 )
 
 
-cursos = {
-    1: {
-        "titulo": "Programação para Leigos",
-        "aulas": 112,
-        "horas": 58
-    },
-    2: {
-        "titulo": "Algoritmos e Lógica de Programação",
-        "aulas": 87,
-        "horas": 57
-    }
-}
-
 #Pega todos os cursos
 @app.get('/cursos',
           description='Retorna todos os cursos ou uma lista vazia.',
           summary='Retorna todos os cursos',
-          response_model=List[Curso])
+          response_model=List[Curso],
+          response_description = 'Cursos encontrados com sucesso.')
 async def get_cursos(db: Any = Depends(fake_db)):
     return cursos
 
@@ -79,11 +67,12 @@ async def get_curso(curso_id: int = Path(default=None, title='ID do curso', desc
           status_code=status.HTTP_201_CREATED, 
           description='Inserir um novo curso.', 
           summary='Insere curso',
-          response_model=Curso)
-async def post_curso(curso: Curso, db: Any = Depends(fake_db)):
-    teste: int = len(cursos) + 1
-    cursos[teste] = curso
-    #del curso.id
+          response_model=Curso) #Aqui também é possível colocar o Depends
+async def post_curso(curso: Curso):
+    next_id: int = len(cursos) + 1
+    curso.id = next_id
+    cursos.append(curso)
+
     return curso
 
 
